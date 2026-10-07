@@ -22,7 +22,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Yandex Cloud Container Registry
+      - name: Login to Yandex Container Registry
         id: login-cr
         uses: yc-actions/yc-cr-login@v3
         with:
@@ -46,6 +46,9 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
+          sbom: false
+          outputs: type=image,push=true,oci-mediatypes=false
 
   deploy:
     needs: build
