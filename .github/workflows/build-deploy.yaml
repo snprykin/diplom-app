@@ -79,10 +79,14 @@ jobs:
           ${{ secrets.YC_SA_KEY }}
           EOF
           
-          # Получаем IAM-токен через yc CLI (без профиля)
+          # Путь к yc
           export PATH="$HOME/yandex-cloud/bin:$PATH"
-          export YC_SERVICE_ACCOUNT_KEY_FILE=$HOME/sa-key.json
           
+          # ЯВНО настраиваем yc на использование SA-ключа
+          yc config profile create sa-profile || true
+          yc config set service-account-key $HOME/sa-key.json
+          
+          # Получаем IAM-токен
           IAM_TOKEN=$(yc iam create-token)
           echo "::add-mask::$IAM_TOKEN"
           
