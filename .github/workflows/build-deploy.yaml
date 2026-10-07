@@ -63,11 +63,36 @@ jobs:
         with:
           version: 'v1.32.1'
 
+      - name: Install YC CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH
+
       - name: Configure kubeconfig
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
+          
+          # Сохраняем SA-ключ для yc CLI
+          cat > $HOME/sa-key.json <<'EOF'
+          ${{ secrets.YC_SA_KEY }}
+          EOF
+          
+          # Путь к yc
+          export PATH="$HOME/yandex-cloud/bin:$PATH"
+          yc version
+          
+          # Заменяем путь exec-плагина на актуальный
+          sed -i "s|/home/user/yandex-cloud/bin/yc|$HOME/yandex-cloud/bin/yc|g" ~/.kube/config
+          
+          # Настраиваем yc для использования SA
+          yc config profile create sa-profile || true
+          yc config set service-account-key $HOME/sa-key.json
+          yc config set folder-id b1g9p43hspfbf3eqck03
+          
+          # Проверяем доступ
+          kubectl get nodes
 
       - name: Update deployment image
         run: |
