@@ -74,22 +74,20 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
           
-          # Сохраняем SA-ключ для yc CLI
+          # Сохраняем SA-ключ
           cat > $HOME/sa-key.json <<'EOF'
           ${{ secrets.YC_SA_KEY }}
           EOF
           
-          # Путь к yc
+          # Получаем IAM-токен через yc CLI (без профиля)
           export PATH="$HOME/yandex-cloud/bin:$PATH"
-          yc version
+          export YC_SERVICE_ACCOUNT_KEY_FILE=$HOME/sa-key.json
           
-          # Заменяем путь exec-плагина на актуальный
-          sed -i "s|/home/user/yandex-cloud/bin/yc|$HOME/yandex-cloud/bin/yc|g" ~/.kube/config
+          IAM_TOKEN=$(yc iam create-token)
+          echo "::add-mask::$IAM_TOKEN"
           
-          # Настраиваем yc для использования SA
-          yc config profile create sa-profile || true
-          yc config set service-account-key $HOME/sa-key.json
-          yc config set folder-id b1g9p43hspfbf3eqck03
+          # Подставляем токен в kubeconfig
+          sed -i "s|PLACEHOLDER_TOKEN|$IAM_TOKEN|g" ~/.kube/config
           
           # Проверяем доступ
           kubectl get nodes
